@@ -71,10 +71,9 @@ import Data.IntMap.Internal (
 , branchMask
 )
 import Data.Maybe (Maybe(Nothing, Just))
-import Data.Monoid (class Monoid, mempty)
 import Data.Traversable (class Traversable)
 import Data.Tuple (Tuple (Tuple))
-import Prelude
+import Prelude (class Semigroup, class Functor, class Monoid, identity, class Eq, class Show, class Applicative, (==), ($), (+), (&&), (<>), (<$>), (<*>), eq, show, otherwise, const, mempty, not, pure, append )
 
 -- Type definition (not exported)
 -- ----------------------------------------------------------------------------
@@ -104,7 +103,7 @@ instance intMapFoldable :: Foldable IntMap where
 
 instance intMapTraversable :: Traversable IntMap where
   traverse f = traverseWithKey (\_ -> f)
-  sequence = traverseWithKey (\_ -> id)
+  sequence = traverseWithKey (\_ -> identity)
 
 instance intMapEq :: (Eq a) => Eq (IntMap a) where
   eq Empty Empty = true
@@ -173,7 +172,7 @@ insertWith splat = insertWithKey (\_ -> splat)
 -- | Like `insertWith` but the splatting function also has access to the
 -- | map key where the conflict arose.
 insertWithKey :: forall a . (Int -> a -> a -> a) -> Int -> a -> IntMap a -> IntMap a
-insertWithKey splat k a t = go t where
+insertWithKey splat k a t0 = go t0 where
   go t =
     case t of
       Empty -> Lf k a
@@ -190,7 +189,7 @@ insertWithKey splat k a t = go t where
 -- | /O(min(n,W))/. Delete a key and its value from map. When the key is not
 -- | a member of the map, the original map is returned.
 delete :: forall a. Int -> IntMap a -> IntMap a
-delete k t = go t where
+delete k t0 = go t0 where
   go t =
     case t of
       Empty -> Empty
@@ -222,7 +221,7 @@ update f = updateWithKey (\_ x -> f x)
 -- | at @k@ (if it is in the map). If (@f k x@) is 'Nothing', the element is
 -- | deleted. If it is (@'Just' y@), the key @k@ is bound to the new value @y@.
 updateWithKey :: forall a. (Int -> a -> Maybe a) -> Int -> IntMap a -> IntMap a
-updateWithKey f k t = go t where
+updateWithKey f k t0 = go t0 where
   go t =
     case t of
       Empty -> Empty
@@ -270,7 +269,7 @@ alter f k t =
 -- | /O(n+m)/. Difference between two maps (based on keys).
 difference :: forall a b. IntMap a -> IntMap b -> IntMap a
 difference m1 m2 =
-  mergeWithKey (\_ _ _ -> Nothing) id (const Empty) m1 m2
+  mergeWithKey (\_ _ _ -> Nothing) identity (const Empty) m1 m2
 
 -- | /O(n+m)/. Difference with a combining function.
 differenceWith :: forall a b. (a -> b -> Maybe a)
@@ -285,7 +284,7 @@ differenceWith f m1 m2 =
 differenceWithKey :: forall a b. (Int -> a -> b -> Maybe a)
                   -> IntMap a -> IntMap b -> IntMap a
 differenceWithKey f m1 m2 =
-  mergeWithKey f id (const Empty) m1 m2
+  mergeWithKey f identity (const Empty) m1 m2
 
 -- | Unions two `IntMap`s together using a splatting function. If
 -- | a key is present in both constituent lists then the resulting
@@ -312,7 +311,7 @@ unionWithKey splat = go where
   go Empty r = r
   go l Empty = l
   go (Lf k a) r = insertWithKey splat k a r
-  go l (Lf k a) = insertWithKey (\k a b -> splat k b a) k a l
+  go l (Lf k0 a0) = insertWithKey (\k a b -> splat k b a) k0 a0 l
   go l@(Br l_p l_m l_l l_r) r@(Br r_p r_m r_l r_r)
 
     -- the prefixes are identical, we'll union symmetrically
@@ -417,7 +416,7 @@ mapWithKey f = go where
     case m of
       Empty -> Empty
       Lf k a -> Lf k (f k a)
-      Br p m l r -> Br p m (go l) (go r)
+      Br p m0 l r -> Br p m0 (go l) (go r)
 
 -- | Construct an `IntMap` from an associative array from integer keys to values
 fromAssocArray :: forall a . Array (Tuple Int a) -> IntMap a
