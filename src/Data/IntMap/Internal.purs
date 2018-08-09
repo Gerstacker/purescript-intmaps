@@ -3,7 +3,7 @@ module Data.IntMap.Internal where
 
 import Data.Function.Uncurried (Fn2 (), runFn2)
 import Data.Int.Bits ((.^.), complement, (.&.), (.|.), zshr)
-import Prelude
+import Prelude (class Eq, class Ord, (<), (==), (-), (*), eq, compare, otherwise)
 
 -- Newtypes
 ----------------------------------------------------------------------------
@@ -50,7 +50,7 @@ _mask :: Int -> Int -> Int
 _mask m k = (k .|. (m-1)) .&. complement m
 
 highestBit :: Int -> Int -> Int
-highestBit x m = highb (x .&. complement (m - 1)) m where
+highestBit x0 m0 = highb (x0 .&. complement (m0 - 1)) m0 where
   highb :: Int -> Int -> Int
   highb x m
     | x == m = m
